@@ -1,0 +1,28 @@
+# No trailing slash: also matches a node_modules that is a symlink or junction.
+node_modules
+film/out/
+film/public/audio/*.wav
+audio-src/*
+!audio-src/CREDITS.md
+# Footage (PNG sequences) stays local; the footage server's own code is kept.
+footage/
+!tools/footage/
+tools/mix/cache/
+__pycache__/
+# Audio and video files never go in the repo (see audio-src/CREDITS.md and README.md).
+*.wav
+*.mp3
+*.flac
+*.aif
+*.aiff
+*.m4a
+*.aac
+*.ogg
+*.opus
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.avi
+.DS_Store
+*.log
