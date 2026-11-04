@@ -34,15 +34,65 @@ export type Cover = { x: number; y: number; w: number; h: number; at?: [number, 
 // shadow to 813 and x 4-251) under the sidebar's own ground, as the quick package does for the split (crit7 #15a). The
 // "Archived" row above it ends at 759.7, the sidebar's divider is at 256. No account name on the wall.
 const CARD = { x: 4, y: 761, w: 249, h: 57 };
+
+// r8 speedfix. Leon: no speed numbers anywhere in the film (no timings, no durations, no before/after performance
+// numbers). The agents' answers stream two tables: "Metric | Before | After" (Layout shift 0.21 -> 0.00, Largest paint
+// 2.4 s -> 1.1 s, Renders on load 14 -> 2: in the hero takes and split2's left chat) and "Spec | Result | Time" (1.8 s,
+// 1.2 s, 2.4 s: split2's right chat). The columns that carry them go under the table's own grounds, one cover per band
+// between two rules, so every rule, the frame and its rounded corners stay whole: Metric reads as a one-column table and
+// Spec | Result as a two-column one, Result running to the frame. Measured on the take's PNGs: the rules are 1 CSS px
+// (centres below), the header band and the rows are flat, the rows are the chat's own ground, and each table pops in
+// whole on its first frame (no fade), so a band's cover starts on that frame. Each cover keeps 0.8 px clear of its rules.
+type Ground = { head: string; row: string };
+const INK: Ground = { head: 'rgb(26,26,26)', row: 'rgb(15,15,15)' }; // lint-ok: the dark table's header band (#1A1A1A) and rows, the chat's own ground (#0F0F0F), sampled from the takes' PNGs
+const PAPER: Ground = { head: 'rgb(250,250,250)', row: 'rgb(253,253,253)' }; // lint-ok: the light table's header band (#FAFAFA) and rows, the chat's own ground (#FDFDFD), sampled from the take's PNGs
+/**
+ * Columns x0-x1 of a table under its own grounds, band by band: `rules` are the centres of its horizontal rules (top,
+ * under the header, under each row; rows still to come stream onto the chat's ground, so their bands are covered from
+ * the start), `scroll` the chat's own scroll of the table as [first clip frame, last, dy]. The last frame held on.
+ */
+const dropColumns = (x0: number, x1: number, rules: number[], g: Ground, scroll: [number, number, number][]): Cover[] =>
+  scroll.flatMap(([a, b, dy]) =>
+    rules.slice(1).map((r, i): Cover => ({ x: x0, y: rules[i] + dy + 0.8, w: x1 - x0, h: r - rules[i] - 1.6, fill: i ? g.row : g.head, at: [a, b] })),
+  );
+// The hero takes' Metric table (both themes, same layout): rules at 476.5-596.5, frame x 397.5-1170.5. Before and After
+// (their divider moves 740.5 -> 792.5 as the rows stream) go from x 600, clear of the longest label ("Renders on load"
+// ends at 496), to 1150, clear of the frame's corners. hero-window2: pops in on 199, still to 335; the chat then scrolls
+// it up in whole px as the checklist streams under it (wall: f301-358). light2: pops in on 218 and never moves.
+const METRIC = [476.5, 506.5, 536.5, 566.5, 596.5];
+const HERO_SCROLL: [number, number, number][] = [[199, 335, 0], [336, 336, -1], [337, 337, -2], [338, 338, -4], [339, 339, -5], [340, 340, -7], [341, 341, -9], [342, 342, -10], [343, 343, -11], [344, 344, -12], [345, 346, -13], [347, 348, -14], [349, 351, -15], [352, 354, -16], [355, Infinity, -17]];
+// split2's right chat: the spec table pops in on 258 (rules 535.45-655.45, frame x 825-1269); the chat's smooth scroll
+// moves it by sub-pixel steps on 306-322 and again from 354 (the wall shows f282-337). The Time column and the Result |
+// Time divider (1161 until 281, then 1169.5) go from x 1158, clear of "Passed" (ends 1103), to 1245.
+const SPEC_SCROLL: [number, number, number][] = [[258, 307, 0], [308, 308, -1], [309, 309, -2.8], [310, 310, -5.1], [311, 311, -6], [312, 312, -6.9], [313, 313, -7.8], [314, 314, -8.7], [315, 316, -10.1], [317, 318, -11], [319, 322, -11.9], [323, 353, -12.8], [354, 354, -13.7], [355, 355, -15.1], [356, 356, -16.9], [357, 357, -20.1], [358, 358, -21], [359, Infinity, -22.8]];
+
 export const COVERS: Record<string, Cover[]> = {
-  'hero-window2': [{ ...CARD, fill: 'rgb(19,19,19)' }], // lint-ok: the dark sidebar's own ground (#131313), sampled from the take's PNGs
-  'hero-window-light2': [{ ...CARD, fill: 'rgb(252,252,252)' }], // lint-ok: the light sidebar's own ground (#FCFCFC), sampled from the take's PNGs
+  // chat-stream's status row, "Working for 5s" / "6s" (CSS: bullet 15.8-23.3, "Working" 34.1-79.8, "for 6s" 84-114.7,
+  // y 135-148.3): still from clip 67 to 410 (0.8 px up from 371), off the top by 412 and at rest at y 47, above every
+  // stream view (y 60 on). The wall shows it in stream (f299-379) and streamB (f398-410). " for Ns" goes under the
+  // chat's own ground and the row reads "Working" by its dot. The subagents' "· 2s" (x 425 on) are right of every
+  // stream view (x 30-360), the previous turn's "Worked for 1s" (f0-38) before every one.
+  'chat-stream': [
+    { x: 81.5, y: 131.5, w: 40.5, h: 20, at: [67, 410], fill: 'rgb(15,15,15)' }, // lint-ok: the chat's own ground (#0F0F0F), sampled from the take's PNGs
+  ],
+  'hero-window2': [
+    { ...CARD, fill: 'rgb(19,19,19)' }, // lint-ok: the dark sidebar's own ground (#131313), sampled from the take's PNGs
+    ...dropColumns(600, 1150, METRIC, INK, HERO_SCROLL),
+  ],
+  'hero-window-light2': [
+    { ...CARD, fill: 'rgb(252,252,252)' }, // lint-ok: the light sidebar's own ground (#FCFCFC), sampled from the take's PNGs
+    ...dropColumns(600, 1150, METRIC, PAPER, [[218, Infinity, 0]]),
+  ],
   split2: [
     { ...CARD, fill: 'rgb(19,19,19)' }, // lint-ok: the dark sidebar's own ground (#131313), sampled from the take's PNGs
     // The browser caret in the right composer (CSS 825-826 x 723.6-743.6) blinks at random under the capture's clock from
     // clip 155 on (Leon: no flashing caret). The same place from clip 236, a caret-off frame, is identical outside the
     // caret's two columns to every frame of 155-250 (quick package) and 270-344 (measured r8): only the caret goes.
     { x: 814, y: 716, w: 26, h: 36, from: 236, at: [155, 344] },
+    // The left chat's Metric table pops in on 265 and never moves (rules 443.58-563.58, frame x 297.7-741.8): Before and
+    // After (divider 495 -> 525 as the rows stream) go from x 440, clear of "Renders on load" (ends 411), to 725.
+    ...dropColumns(440, 725, [443.58, 473.58, 503.58, 533.58, 563.58], INK, [[265, Infinity, 0]]),
+    ...dropColumns(1158, 1245, [535.45, 565.45, 595.45, 625.45, 655.45], INK, SPEC_SCROLL),
   ],
 };
 
